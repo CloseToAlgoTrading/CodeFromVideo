@@ -1,0 +1,187 @@
+dict_value {
+  fields {
+    key: "collect_data_spec"
+    value {
+      named_tuple_value {
+        name: "Trajectory"
+        values {
+          key: "step_type"
+          value {
+            tensor_spec_value {
+              name: "step_type"
+              shape {
+              }
+              dtype: DT_INT32
+            }
+          }
+        }
+        values {
+          key: "observation"
+          value {
+            dict_value {
+              fields {
+                key: "pos"
+                value {
+                  bounded_tensor_spec_value {
+                    name: "obs_pos"
+                    shape {
+                      dim {
+                        size: 2
+                      }
+                    }
+                    dtype: DT_INT32
+                    minimum {
+                      dtype: DT_INT32
+                      tensor_shape {
+                      }
+                      int_val: 0
+                    }
+                    maximum {
+                      dtype: DT_INT32
+                      tensor_shape {
+                      }
+                      int_val: 1
+                    }
+                  }
+                }
+              }
+              fields {
+                key: "price"
+                value {
+                  bounded_tensor_spec_value {
+                    name: "obs_price"
+                    shape {
+                      dim {
+                        size: 20
+                      }
+                      dim {
+                        size: 5
+                      }
+                    }
+                    dtype: DT_FLOAT
+                    minimum {
+                      dtype: DT_FLOAT
+                      tensor_shape {
+                      }
+                      float_val: 0.0
+                    }
+                    maximum {
+                      dtype: DT_FLOAT
+                      tensor_shape {
+                      }
+                      float_val: 3.4028235e+38
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        values {
+          key: "action"
+          value {
+            bounded_tensor_spec_value {
+              name: "action"
+              shape {
+              }
+              dtype: DT_INT32
+              minimum {
+                dtype: DT_INT32
+                tensor_shape {
+                }
+                int_val: 0
+              }
+              maximum {
+                dtype: DT_INT32
+                tensor_shape {
+                }
+                int_val: 3
+              }
+            }
+          }
+        }
+        values {
+          key: "policy_info"
+          value {
+            tuple_value {
+            }
+          }
+        }
+        values {
+          key: "next_step_type"
+          value {
+            tensor_spec_value {
+              name: "step_type"
+              shape {
+              }
+              dtype: DT_INT32
+            }
+          }
+        }
+        values {
+          key: "reward"
+          value {
+            tensor_spec_value {
+              name: "reward"
+              shape {
+              }
+              dtype: DT_FLOAT
+            }
+          }
+        }
+        values {
+          key: "discount"
+          value {
+            bounded_tensor_spec_value {
+              name: "discount"
+              shape {
+              }
+              dtype: DT_FLOAT
+              minimum {
+                dtype: DT_FLOAT
+                tensor_shape {
+                }
+                float_val: 0.0
+              }
+              maximum {
+                dtype: DT_FLOAT
+                tensor_shape {
+                }
+                float_val: 1.0
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  fields {
+    key: "policy_state_spec"
+    value {
+      list_value {
+        values {
+          tensor_spec_value {
+            name: "network_state_0"
+            shape {
+              dim {
+                size: 20
+              }
+            }
+            dtype: DT_FLOAT
+          }
+        }
+        values {
+          tensor_spec_value {
+            name: "network_state_1"
+            shape {
+              dim {
+                size: 20
+              }
+            }
+            dtype: DT_FLOAT
+          }
+        }
+      }
+    }
+  }
+}
