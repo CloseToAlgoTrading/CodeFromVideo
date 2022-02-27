@@ -1,0 +1,16 @@
+name: rapids_env
+channels:
+ - conda-forge
+ - rapidsai
+ - nvidia
+dependencies:
+ - python=3.8
+# - cudf
+# - cuml
+# - dask
+# - cudatoolkit
+ - cython
+ - rapids=21.12.0
+ - cudatoolkit=11.2.0
+
+
