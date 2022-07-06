@@ -95,13 +95,11 @@ class m_PandasData(bt.feeds.PandasData):
     #    ('adj_close','Adj Close'),
     )
 
-df_abs = df_abs.iloc[:1000]
-
 config_cerebro = {
     'assets':assets[:50],
     'benchmark':bm_ticker,
-    'startd': start_time,
-    'endd'  : datetime.now(), #datetime(2020, 12, 31),
+    'startd': datetime(2007, 1, 1),
+    'endd'  : datetime(2010, 1, 1), 
     'cheat_on' : 'coo',
     'cash': 10000.0,
     'stocks_df':None,
@@ -160,6 +158,4 @@ cols = df_abs.columns.get_level_values(0).unique().values
 config_cerebro['stocks_df'] = df_abs.loc[:, (tuple(cols), assets)]
 config_cerebro['benchmark_df'] = df_abs.loc[:, (tuple(cols), [bm_ticker])].droplevel(1,axis=1)
 
-df = backtest(config_cerebro, DynRebalance, **input_param)
-
-#print(df.columns)
+df_statistics, allocation_history, df_returns = backtest(config_cerebro, DynRebalance, **input_param)

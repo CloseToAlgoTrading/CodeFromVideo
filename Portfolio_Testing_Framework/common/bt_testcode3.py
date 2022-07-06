@@ -9,7 +9,6 @@ from tqdm import tqdm
 import backtrader as bt
 from datetime import datetime
 import backtrader.analyzers as btanalyzers
-import plotly.graph_objects as go
 from pandas_datareader import data as pdr
 
 #Following code need to be here for simple access to the modules
@@ -41,26 +40,48 @@ np.set_printoptions(formatter={'float_kind':float_formatter})
 
 np.random.seed(123)
 
+#------------------- Analysers -----------
+# backtrader
+class AllocationHistory(Analyzer):
+    params = (('timeframe', TimeFrame.Days),)
+
+    def __init__(self):
+        super(AllocationHistory, self).__init__()
+        self.df_allocation = pd.DataFrame()
+       
+
+    def start(self):
+        # Not needed ... but could be used
+        pass
+
+    def next(self):
+        d = [self.strategy.datetime.date(ago=0)]
+        d = {'Date': self.strategy.datetime.date(ago=0)}
+        d.update(self.strategy.t_allocation)
+        self.df_allocation = pd.concat([self.df_allocation, pd.DataFrame([d])])
+        pass
+
+    def stop(self):
+        self.df_allocation = self.df_allocation.fillna(0.0)
+        self.df_allocation.set_index('Date', inplace=True)
+        pass
+
+    def get_analysis(self):
+        return dict(allocation=self.df_allocation)
+
+
+
 
 def generateOuputResult(s_name, returns):
 
     mtx = quantstats.reports.metrics(returns=returns,
-                rf=0., display=False, mode='basic',
+                rf=0., display=False, mode='full',
                 compounded=True,
                 periods_per_year=252,
                 prepare_returns=False)
     mtx.rename(columns = {'Strategy':s_name}, inplace = True)
-    return mtx.T.loc[:,['Cumulative Return', 'CAGR﹪', 'Sharpe','Max Drawdown']]
+    return mtx.T.loc[:,['Cumulative Return', 'CAGR﹪', 'Volatility (ann.)', 'Sharpe','Max Drawdown']]
 
-
-# Plot assset allocation history
-# input is a dataframe with allocations
-def plotAllocation(alloc):
-    fig = go.Figure()
-    for c in alloc.columns:
-        fig.add_trace(go.Bar(x=alloc.index.values, y=alloc[c], name=c, ))
-    fig.update_layout(barmode='stack', xaxis={'categoryorder':'total descending'}, bargap=0.0,bargroupgap=0.0)
-    fig.show()
 
 class DynRebalance(bt.Strategy):
     
@@ -125,6 +146,7 @@ class DynRebalance(bt.Strategy):
 
     def __init__(self, m_input=None):
 
+        self.t_allocation = []
         self.final_value = 0
 
         #deifne warup parametres        
@@ -218,6 +240,8 @@ class DynRebalance(bt.Strategy):
             #get portfolio allocation 
             allocations = self.portfolioConstructionModel.get_allocations(selected_signals, m_input2)
             self.Log(self.LogLevel.L_1, f'allocations {allocations}')
+            #tmp
+            self.t_allocation = allocations
             #get rebalance actions
             allocations = self.rebalanceModel.get_allocations(allocations, m_input2)
             self.Log(self.LogLevel.L_1, f'size_allocations {allocations}')
@@ -296,6 +320,8 @@ def backtest(cfg, strategy, **kwargs):
         if cfg.get('stocks_df', None) is None:
             cerebro.adddata(bt.feeds.YahooFinanceData(dataname=a, fromdate=cfg['startd'], todate=cfg['endd'], plot=False))
         else:
+            f = (cfg['stocks_df'].index >= cfg['startd']) & (cfg['stocks_df'].index < cfg['endd'])
+            cfg['stocks_df'] = cfg['stocks_df'].loc[f]
             # else from the pandas dataframe
             if cfg.get('data_format', None) is not None:
                 cerebro.adddata(cfg['data_format'](dataname=getStock(cfg['stocks_df'],a)), name=a)
@@ -307,6 +333,8 @@ def backtest(cfg, strategy, **kwargs):
         if (cfg['benchmark_df'] is None):
             bm = bt.feeds.YahooFinanceData(dataname=cfg['benchmark'], fromdate=cfg['startd'], todate=cfg['endd'], plot=False)
         else:
+            f = (cfg['benchmark_df'].index >= cfg['startd']) & (cfg['benchmark_df'].index < cfg['endd'])
+            cfg['benchmark_df'] = cfg['benchmark_df'].loc[f]
             if('data_format' in cfg):
                 bm = cfg['data_format'](dataname=cfg['benchmark_df'],name=cfg['benchmark'])
             else:
@@ -316,10 +344,11 @@ def backtest(cfg, strategy, **kwargs):
     
     if(True == cfg.get('addBenchmarktToOutput', False)):
         cerebro.addanalyzer(bt.analyzers.TimeReturn, timeframe=bt.TimeFrame.Days, data=bm, _name='BenchmarkReturns')
-    #cerebro.addanalyzer(AllocationHistory, _name='allocationHistory')
+    cerebro.addanalyzer(AllocationHistory, _name='allocationHistory')
 
     # add pyFolio Analyzer
     cerebro.addanalyzer(bt.analyzers.PyFolio, _name='PyFolio')
+
     
     cerebro.broker.setcommission(commission=0.0)
     cerebro.broker.setcash(cfg['cash'])
@@ -328,6 +357,7 @@ def backtest(cfg, strategy, **kwargs):
 
     strats = cerebro.run(maxcpus = cfg.get('maxcpus',1))
 
+    allocation_history = {}
     bm_ret = None
     df_returns = pd.DataFrame()
     print('Report:')
@@ -362,6 +392,9 @@ def backtest(cfg, strategy, **kwargs):
                 ret = generateOuputResult(strategy.strategy_name, returns)
                 df = pd.concat([df, ret])
 
+                allocation_history[strategy.strategy_name] = strategy.analyzers.getbyname('allocationHistory').get_analysis()['allocation'].iloc[strategy.WarmUpPeriod:]
+
+
     df_returns.index = pd.to_datetime(df_returns.index)
     if True == cfg.get('generate_global_report', False) and (df_returns.shape[0] > 0):
         fname = (cfg.get('report_name', 'test_report')).replace(" ", "_") + '_GLOBAL_' + '.html'
@@ -374,4 +407,6 @@ def backtest(cfg, strategy, **kwargs):
     if(True == cfg.get('printResults',False)):
         print('\nResults:')
         print(df)
-    return df
+    if (bm_ret is not None):
+        df_returns = pd.concat([df_returns, bm_ret],axis=1)
+    return df, allocation_history, df_returns

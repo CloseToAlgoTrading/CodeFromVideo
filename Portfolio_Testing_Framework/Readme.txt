@@ -1,0 +1,1 @@
+If you want to generate the 'global' report or you want to see the progress bar during the testing you have to change the packages in your enviroment with the files from "changed_packages" folder
